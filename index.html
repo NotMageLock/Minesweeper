@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        #minesweeper {
+            text-align: center;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(10, 30px);
+            gap: 2px;
+            margin: 20px auto;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #444;
+            border: 1px solid #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .cell.revealed {
+            background-color: #888;
+            cursor: default;
+        }
+
+        .cell.mine {
+            background-color: red;
+        }
+
+        #restart-button {
+            padding: 10px 20px;
+            background-color: #555;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #restart-button:hover {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="minesweeper">
+        <h1>Minesweeper</h1>
+        <div id="game-board"></div>
+        <button id="restart-button">Restart</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const boardSize = 10;
+            const mineCount = 10;
+            let board = [];
+            let revealedCells = 0;
+
+            const gameBoard = document.getElementById("game-board");
+            const restartButton = document.getElementById("restart-button");
+
+            function createBoard() {
+                board = [];
+                revealedCells = 0;
+                gameBoard.innerHTML = '';
+
+                for (let i = 0; i < boardSize; i++) {
+                    const row = [];
+                    for (let j = 0; j < boardSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        cell.addEventListener('click', revealCell);
+                        gameBoard.appendChild(cell);
+                        row.push({ isMine: false, isRevealed: false, element: cell });
+                    }
+                    board.push(row);
+                }
+
+                // Place mines
+                let minesPlaced = 0;
+                while (minesPlaced < mineCount) {
+                    const row = Math.floor(Math.random() * boardSize);
+                    const col = Math.floor(Math.random() * boardSize);
+                    if (!board[row][col].isMine) {
+                        board[row][col].isMine = true;
+                        minesPlaced++;
+                    }
+                }
+            }
+
+            function revealCell(event) {
+                const row = parseInt(event.target.dataset.row);
+                const col = parseInt(event.target.dataset.col);
+                if (board[row][col].isRevealed) return;
+
+                board[row][col].isRevealed = true;
+                revealedCells++;
+                event.target.classList.add('revealed');
+
+                if (board[row][col].isMine) {
+                    event.target.classList.add('mine');
+                    alert("Game Over!");
+                    revealAllMines();
+                } else {
+                    const minesAround = countMinesAround(row, col);
+                    if (minesAround > 0) {
+                        event.target.textContent = minesAround;
+                    } else {
+                        revealAdjacentCells(row, col);
+                    }
+
+                    if (revealedCells === boardSize * boardSize - mineCount) {
+                        alert("You Win!");
+                    }
+                }
+            }
+
+            function countMinesAround(row, col) {
+                let count = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        const newRow = row + i;
+                        const newCol = col + j;
+                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                            if (board[newRow][newCol].isMine) {
+                                count++;
+                            }
+                        }
+                    }
+                }
+                return count;
+            }
+
+            function revealAdjacentCells(row, col) {
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        const newRow = row + i;
+                        const newCol = col + j;
+                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
+                            if (!board[newRow][newCol].isRevealed && !board[newRow][newCol].isMine) {
+                                board[newRow][newCol].element.click();
+                            }
+                        }
+                    }
+                }
+            }
+
+            function revealAllMines() {
+                for (let i = 0; i < boardSize; i++) {
+                    for (let j = 0; j < boardSize; j++) {
+                        if (board[i][j].isMine) {
+                            board[i][j].element.classList.add('mine');
+                            board[i][j].element.classList.add('revealed');
+                        }
+                    }
+                }
+            }
+
+            restartButton.addEventListener('click', createBoard);
+
+            createBoard();
+        });
+    </script>
+</body>
+</html>
